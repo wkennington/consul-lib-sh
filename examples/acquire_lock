@@ -23,7 +23,7 @@
 
 SCRIPT_DIR="$(readlink -f "$(dirname "$0")/..")"
 . $SCRIPT_DIR/consul-lib.sh
-SESSION="$(session_create_persist updater)" || exit 1
+SESSION="$(session_create_persist example)" || exit 1
 echo "$SESSION"
 echo "Entering lock acquire loop"
 IDX=0
