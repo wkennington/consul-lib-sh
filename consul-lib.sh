@@ -31,25 +31,85 @@ if ! curl --help >/dev/null 2>&1; then
 fi
 
 curl_true () {
-  curl $@ 2>/dev/null | grep 'true' >/dev/null 2>&1
+  local CURL_ARGS
+  local CURL_OUT
+
+  CURL_ARGS=$@
+
+  CURL_OUT="$(curl $CURL_ARGS 2>/dev/null)" || return $?
+  echo "$CURL_OUT" | grep 'true' >/dev/null 2>&1
+}
+
+curl_sed () {
+  local CURL_ARGS
+  local CURL_OUT
+  local SED_IN
+
+  SED_IN="'$1'"
+  shift 1
+  CURL_ARGS=$@
+
+  CURL_OUT="$(eval curl $CURL_ARGS 2>/dev/null)" || return $?
+  echo "$CURL_OUT" | eval sed "$SED_IN"
+  exit 0
 }
 
 session_create_persist () {
+  local CURL_OUT
+  local DATA
+  local SED_EXPR
+  local SESSION_NAME
+  local URL
+
   [ "$#" -eq "1" ] || return 1
-  curl -X PUT -d "{ \"Name\": \"$1\", \"Checks\": [ ] }" "http://$HTTP_HOST/v1/session/create" 2>/dev/null | sed 's/.*"ID":"\([^"]*\)"}.*/\1/'
+  SESSION_NAME="$1"
+
+  SED_EXPR='s/.*"ID":"\([^"]*\)"}.*/\1/'
+  URL="'http://$HTTP_HOST/v1/session/create'"
+  DATA="'{ \"Name\": \"$SESSION_NAME\", \"Checks\": [ ] }'"
+
+  CURL_OUT="$(curl_sed "$SED_EXPR" -X PUT -d "$DATA" "$URL")" || return $?
+  [ -z "$CURL_OUT" ] && return 1
+  echo "$CURL_OUT"
 }
 
 session_destroy () {
+  local SESSION_ID
+
   [ "$#" -eq "1" ] || return 1
-  curl_true -X PUT "http://$HTTP_HOST/v1/session/destroy/$1"
+  SESSION_ID="$1"
+
+  curl_true -X PUT "http://$HTTP_HOST/v1/session/destroy/$SESSION_ID"
 }
 
 lock () {
+  local KEY
+  local LOCK_ARG
+  local SESSION_ID
+
   [ "$#" -eq "3" ] || return 1
-  curl_true -X PUT "http://$HTTP_HOST/v1/kv/$2?$1=$3"
+  LOCK_ARG="$1"
+  KEY="$2"
+  SESSION_ID="$3"
+
+  curl_true -X PUT "http://$HTTP_HOST/v1/kv/$KEY?$LOCK_ARG=$SESSION_ID"
 }
 
 wait_on_key () {
+  local CURL_OUT
+  local INDEX
+  local KEY
+  local SED_EXPR
+  local URL
+
   [ "$#" -eq "2" ] || return 1
-  curl "http://$HTTP_HOST/v1/kv/$1?index=$2&wait=" 2>/dev/null | sed 's/.*"ModifyIndex":\([^,]*\),.*/\1/'
+  KEY="$1"
+  INDEX="$2"
+
+  SED_EXPR='s/.*"ModifyIndex":\([^,]*\),.*/\1/'
+  URL="http://$HTTP_HOST/v1/kv/$KEY?index=$INDEX&wait="
+
+  CURL_OUT="$(curl_sed "$SED_EXPR")" || return $?
+  [ -z "$CURL_OUT" ] && return 1
+  echo "$CURL_OUT"
 }
