@@ -21,6 +21,8 @@
 # SOFTWARE.
 ################################################################################
 
+KEY="example-acquire-lock"
+
 SCRIPT_DIR="$(readlink -f "$(dirname "$0")/..")"
 . $SCRIPT_DIR/consul-lib.sh
 
@@ -32,13 +34,13 @@ echo "Session ID: $SESSION"
 
 echo "Entering lock acquire loop"
 IDX=0
-while ! lock acquire "key1" "$SESSION"; do
-  IDX="$(wait_on_key "key1" "$IDX")"
+while ! lock acquire "$KEY" "$SESSION"; do
+  IDX="$(wait_on_key "$KEY" "$IDX")"
   echo "Lock key updated"
 done
 
 echo "Acquired Lock... Press Enter To Exit"
 read
 
-lock release "key1" "$SESSION"
+lock release "$KEY" "$SESSION"
 session_destroy "$SESSION"
