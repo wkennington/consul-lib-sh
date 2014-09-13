@@ -24,7 +24,7 @@
 # Global session stuff
 HTTP_HOST="localhost:8500"
 
-curl_true() {
+curl_true () {
   curl $@ 2>/dev/null | grep 'true' >/dev/null 2>&1
 }
 
@@ -45,5 +45,5 @@ lock () {
 
 wait_on_key () {
   [ "$#" -eq "2" ] || return 1
-  curl "http://localhost:8500/v1/kv/$1?index=$2&wait=" 2>/dev/null | sed 's/.*"ModifyIndex":\([^,]*\),.*/\1/'
+  curl "http://$HTTP_HOST/v1/kv/$1?index=$2&wait=" 2>/dev/null | sed 's/.*"ModifyIndex":\([^,]*\),.*/\1/'
 }
