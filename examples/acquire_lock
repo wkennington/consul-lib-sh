@@ -26,6 +26,14 @@ KEY="example-acquire-lock"
 SCRIPT_DIR="$(readlink -f "$(dirname "$0")/..")"
 . $SCRIPT_DIR/consul-lib.sh
 
+clean_up() {
+  while ! session_destroy "$SESSION"; do
+    echo "Failed to destroy session, retrying in 1s"
+    sleep 1
+  done
+  exit $1
+}
+
 if ! SESSION="$(session_create_persist example)"; then
   echo "Failed to get session from $HTTP_HOST"
   exit 1
@@ -36,6 +44,10 @@ echo "Entering lock acquire loop"
 IDX=0
 while ! lock acquire "$KEY" "$SESSION"; do
   IDX="$(wait_on_key "$KEY" "$IDX")"
+  if [ "$?" -ne "0" ]; then
+    echo "Failed to wait on key: $KEY"
+    clean_up
+  fi
   echo "Lock key updated"
 done
 
@@ -47,7 +59,4 @@ while ! lock release "$KEY" "$SESSION"; do
   echo "Failed to release lock, retrying in 1s"
   sleep 1
 done
-while ! session_destroy "$SESSION"; do
-  echo "Failed to destroy session, retrying in 1s"
-  sleep 1
-done
+clean_up
