@@ -39,8 +39,15 @@ while ! lock acquire "$KEY" "$SESSION"; do
   echo "Lock key updated"
 done
 
-echo "Acquired Lock... Press Enter To Exit"
+echo "Acquired Lock"
+echo -n "Press Enter To Exit... "
 read
 
-lock release "$KEY" "$SESSION"
-session_destroy "$SESSION"
+while ! lock release "$KEY" "$SESSION"; do
+  echo "Failed to release lock, retrying in 1s"
+  sleep 1
+done
+while ! session_destroy "$SESSION"; do
+  echo "Failed to destroy session, retrying in 1s"
+  sleep 1
+done
