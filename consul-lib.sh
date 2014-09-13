@@ -22,7 +22,13 @@
 ################################################################################
 
 # Global session stuff
-HTTP_HOST="localhost:8500"
+HTTP_HOST=${HTTP_HOST:-localhost:8500}
+
+# Test for dependencies
+if ! curl --help >/dev/null 2>&1; then
+  echo "Could not execute curl. Maybe it is not installed?"
+  exit 1
+fi
 
 curl_true () {
   curl $@ 2>/dev/null | grep 'true' >/dev/null 2>&1
