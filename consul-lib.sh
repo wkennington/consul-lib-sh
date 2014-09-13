@@ -107,9 +107,9 @@ wait_on_key () {
   INDEX="$2"
 
   SED_EXPR='s/.*"ModifyIndex":\([^,]*\),.*/\1/'
-  URL="http://$HTTP_HOST/v1/kv/$KEY?index=$INDEX&wait="
+  URL="'http://$HTTP_HOST/v1/kv/$KEY?index=$INDEX&wait='"
 
-  CURL_OUT="$(curl_sed "$SED_EXPR")" || return $?
+  CURL_OUT="$(curl_sed "$SED_EXPR" "$URL")" || return $?
   [ -z "$CURL_OUT" ] && return 1
   echo "$CURL_OUT"
 }
