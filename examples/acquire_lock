@@ -23,15 +23,22 @@
 
 SCRIPT_DIR="$(readlink -f "$(dirname "$0")/..")"
 . $SCRIPT_DIR/consul-lib.sh
-SESSION="$(session_create_persist example)" || exit 1
+
+if ! SESSION="$(session_create_persist example)"; then
+  echo "Failed to get session from $HTTP_HOST"
+  exit 1
+fi
 echo "Session ID: $SESSION"
+
 echo "Entering lock acquire loop"
 IDX=0
 while ! lock acquire "key1" "$SESSION"; do
   IDX="$(wait_on_key "key1" "$IDX")"
   echo "Lock key updated"
 done
+
 echo "Acquired Lock... Press Enter To Exit"
 read
+
 lock release "key1" "$SESSION"
 session_destroy "$SESSION"
